@@ -1,0 +1,121 @@
+---
+title: "Ехало моделирование через моделирование"
+author: "Видит моделирование в моделировании моделирование"
+date: 'Сунуло моделирование моделирование в моделирование'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##**Моделирование моделирование моделирование моделирование** 
+> — Скажите, чем вы здесь занимаетесь?
+> — Прежде всего разрабатываю психологию роботов, правда еще разрабатываю интерфейсы интерактивного взаимодействия и программу комплексного взаимодействия технических модулей.
+— Ну так а чем вы все-таки здесь занимаетесь? (с) Я, Робот
+
+##_**СОЗДАНИЕ МОДЕЛЕЙ ЛИНЕЙНОЙ РЕГРЕССИИ НОЧНЫХ ПОТОКОВ ПАРОВ ВОДЫ ЗА ОСЕННИЙ ПЕРИОД 2013 ГОДА ПО ДАННЫМ ИЗМЕРЕНИЙ МЕТОДОМ ТУРБУЛЕНТНОЙ ПУЛЬСАЦИИ**_
+Для создания модели линейной регрессии ночных потоков паров воды были взяты данные за осенний период 2013 года по данным измерений методом турбулентной пульсации. 
+
+#Обработка данных исходной таблицы#
+
+Табличным данным, надо которыми производилась работа, было присвоено имя eddy для удобства работы
+
+    eddy = read_csv("eddypro.csv")
+  
+В ходе запуска файла “eddy” выяснилось, что переменная представляет собой огромный массив данных, который необходимо преобразовать для дальнейшей работы. Так как данные были получены компьютером, то некоторые отсутствующие значения были представлены в виде “-9999”, которые заменили на "NA". Помимо недостающих значений присутствовали текстовые данные, которые мы удалили, так как они помешали бы проведению обработки данных и корреляции.
+
+    eddy = read_csv("eddypro.csv", skip = 1, na=c("","NA","-9999","-9999.0"),comment =c("["))
+    eddy = eddy[-1,]
+    ##удаляем ненужные столбцы
+    eddy = select(eddy, -(roll)) 
+    eddy = eddy[,c(-1,-3,-6,-7,-9,-12,-15,-18,-21,-30,-35,-70,-88:-99)] 
+    names(eddy) 
+
+По условия задания регрессионная модель нужна для ночных потоков водяного пара за осенний период. Поэтому следующим действием было изъятие из общего массива данных нужного периода с показателями.
+
+    ##выбираем заданные в задании время года и время суток
+    eddy<-eddy[eddy$DOY>244 & eddy$DOY<315 & eddy$daytime == FALSE, c(1:ncol(eddy))]
+
+#Корреляционный анализ#
+
+В следующем шаге для проведения корреляционного анализа выберем из таблицы только те колонки, которые являются числовыми. Только после этого можно будет провести корреляцию паров воды с другими факторами таблицы «eddy», при этом исключив все значения NA и выбрав только те факторы, коэффициент корреляции которых больше чем 0.1
+
+    eddy = eddy %>% mutate_if(is.character, factor) 
+    names(eddy) = str_replace_all(names(eddy), "[!]","_emph_") 
+    names(eddy) = names(eddy) %>% 
+    str_replace_all("[!]","_emph_") %>% 
+    str_replace_all("[?]","_quest_") %>% 
+    str_replace_all("[*]","_star_") %>%
+    str_replace_all("[+]","_plus_") %>% 
+    str_replace_all("[-]","_minus_") %>%
+    str_replace_all("[@]","_at_") %>% 
+    str_replace_all("[$]","_dollar_") %>% 
+    str_replace_all("[#]","_hash_") %>% 
+    str_replace_all("[/]","_div_") %>% 
+    str_replace_all("[%]","_perc_") %>% 
+    str_replace_all("[&]","_amp_") %>% 
+    str_replace_all("[\\^]","_power_") %>% 
+    str_replace_all("[()]","_") 
+    glimpse(eddy) 
+    ##проводим корреляцию только числовых значений
+    eddy_numeric = eddy [,sapply(eddy,is.numeric) ] 
+    eddy_nonnumeric = eddy [,!sapply(eddy,is.numeric) ] 
+    cor_td = cor(eddy _numeric) 
+    cor_td 
+    cor_td = cor(drop_na(eddy_numeric)) %>% as.data.frame %>% select(h2o_flux) 
+    vars = row.names(cor_td)[cor_td$h2o_flux^2 > .1] %>% na.exclude
+
+#Получение формулы и создание линейной модели#
+
+После проведения корреляции получилась формула зависимости паров воды от переменных. Полученные данные корреляции собираем в модель и проводим анализ адекватности модели, исключая при этом переменные, которые не оказывают при взаимодействии влияния на потоки паров воды
+Наблюдаем P-значения первой модели, отбрасываем те переменные, для которых он принимает незначимые значения.
+
+    formula = as.formula(paste("h2o_flux~", paste(vars,collapse = "+"), sep="")) 
+
+Делаем тест обучающей модели
+
+    row_numbers = 1:length(tbl $date) 
+    teach = sample(row_numbers, floor(length(tbl $date)*.7)) 
+    test = row_numbers[-teach] 
+    teaching_ tbl _unq = tbl [teach,] 
+    testing_ tbl _unq = tbl [test,] 
+    mod = lm(formula, data= tbl) 
+    mod 
+    coef(mod) 
+    resid(mod) 
+    confint(mod) 
+    summary(mod)
+    anova(mod)
+
+Далее создаём и анализируем модели множественной регрессии с взаимодействием
+  
+    model1 = lm(h2o_flux ~ (rand_err_Tau + H + LE + rand_err_LE + h2o_flux + rand_err_h2o_flux + co2_molar_density + co2_mixing_ratio + RH + VPD + max_speed + u_star_ + TKE + T_star_ + un_H + un_LE + un_h2o_flux + u_var + v_var + w_div_ts_cov + w_div_h2o_cov + co2_signal_strength_7200)^2, data = eddy)
+    model1
+    coef(model1) 
+    resid(model1) 
+    confint(model1) 
+    summary(model1)
+
+R2 равен 1, поэтому убираем лишние переменные и взаимодействия с высокими Р-значениями
+  
+    anova(model1)
+
+Проделываем циклично до тех пор, пока не будет получена идеальная модель, в которой все переменные и взаимодействия будут значимыми, при этом коэффициент детерминации будет оставаться неизменным или меняться незначительно.
+Готовая полученная модель:
+
+    model4 = lm(h2o_flux ~ (rand_err_Tau + H + LE + rand_err_LE + h2o_flux + rand_err_h2o_flux + co2_molar_density + co2_mixing_ratio + RH + VPD + max_speed +   u_star_ + TKE + T_star_ + un_H + un_LE + un_h2o_flux + w_div_ts_cov + w_div_h2o_cov + co2_signal_strength_7200)^2 - un_H:co2_signal_strength_7200 - w_div_ts_cov:w_div_h2o_- TKE:un_h2o_flux - RH:TKE - un_h2o_flux:w_div_h2o_cov - u_star_:co2_signal_strength_7200 - TKE:un_LE - u_star_:TKE - w_div_h2o_cov:co2_signal_strength_7200 - TKE:w_div_ts_cov - TKE:un_H - u_star_:T_star_ - w_div_ts_cov:co2_signal_strength_7200 - T_star_:un_H - un_H:w_div_ts_cov - T_star_:un_LE - co2_molar_density:co2_signal_strength_7200 -u_star_:un_h2o_flux - un_H:un_h2o_flux - un_h2o_flux:co2_signal_strength_7200 - TKE:w_div_h2o_cov - TKE:co2_signal_strength_7200 - T_star_:w_div_h2o_cov - un_H:w_div_h2o_cov - T_star_:co2_signal_strength_7200 - u_star_:w_div_ts_cov - u_star_:w_div_h2o_cov - VPD:w_div_h2o_cov - rand_err_h2o_flux:un_H - rand_err_h2o_flux:w_div_ts_cov - rand_err_h2o_flux:w_div_h2o_cov - co2_molar_density:co2_mixing_ratio-co2_mixing_ratio:co2_signal_strength_7200- VPD:co2_signal_strength_7200 - max_speed:u_star_ - max_speed:TKE - max_speed:un_H - max_speed:un_h2o_flux  - max_speed:w_div_ts_cov - co2_molar_density:TKE - TKE:T_star_ - T_star_:un_h2o_flux - T_star_:w_div_ts_cov - un_LE:w_div_ts_cov - un_LE:w_div_h2o_cov - VPD:un_H - max_speed:T_star_ - un_H:un_LE - un_h2o_flux:w_div_ts_cov -  u_star_:TKE - u_star_:un_h2o_flux - TKE:un_h2o_flux - T_star_:co2_signal_strength_7200 - w_div_ts_cov:co2_signal_strength_7200 - max_speed:w_div_h2o_cov - VPD:TKE, data = eddy)
+ 
+Проводим заключительный анализ и убеждаемся в том, что модель полностью удовлетворяет нашим требованиям 
+
+    coef(model4) 
+    resid(model4) 
+    confint(model4) 
+    summary(model4)
+    anova(model4)
+
+**Самый ленивый сайт на свете подготовила самая ленивая Рябинкина В.Д.**
+
+Спасибо за интересный курс создателю [этого][] сайта.
+
+  [этого]: http://ecologymodeling.github.io/        "этого"
